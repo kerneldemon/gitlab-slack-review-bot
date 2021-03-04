@@ -1,0 +1,57 @@
+# This file is the entry point to configure your own services.
+# Files in the packages/ subdirectory configure your dependencies.
+
+# Put parameters here that don't need to change on each machine where the app is deployed
+# https://symfony.com/doc/current/best_practices/configuration.html#application-related-configuration
+parameters:
+  slack.access_token: '%env(SLACK_ACCESS_TOKEN)%'
+  request_log.enabled: '%env(bool:REQUEST_LOG_ENABLED)%'
+
+services:
+    # default configuration for services in *this* file
+    _defaults:
+        autowire: true      # Automatically injects dependencies in your services.
+        autoconfigure: true # Automatically registers your services as commands, event subscribers, etc.
+        bind:
+          $isRequestLoggingEnabled: '%request_log.enabled%'
+
+    # makes classes in src/ available to be used as services
+    # this creates a service per class whose id is the fully-qualified class name
+    App\:
+        resource: '../src/*'
+        exclude: '../src/{DependencyInjection,Entity,Migrations,Tests,Kernel.php}'
+
+    # controllers are imported separately to make sure services can be injected
+    # as action arguments even if you don't extend any base controller class
+    App\Controller\:
+        resource: '../src/Controller'
+        tags: ['controller.service_arguments']
+
+    # add more service definitions when explicit configuration is needed
+    # please note that last definitions always *replace* previous ones
+
+    app.monolog.formatter:
+      class: Monolog\Formatter\LineFormatter
+      calls:
+        - [includeStacktraces]
+
+    App\Service\NoteProcessor\ReviewRequestNoteProcessor:
+      tags: [{name: 'app.service.note_processor', priority: 2}]
+
+    App\Service\NoteProcessor\ApprovalNoteProcessor:
+      tags: [{name: 'app.service.note_processor', priority: 1}]
+
+    App\Service\NoteProcessor\CatchAllNoteProcessor:
+      tags: [{name: 'app.service.note_processor', priority: 0}]
+
+    App\Service\CommentService:
+      arguments:
+        $noteProcessors: !tagged_iterator app.service.note_processor
+
+    JoliCode\Slack\Api\Client:
+      factory: ['JoliCode\Slack\ClientFactory', 'create']
+      arguments: ['%slack.access_token%']
+
+    App\Command\ProjectSetupCommand:
+      arguments:
+        $client: '@zeichen32_gitlabapi.client.gitlab'

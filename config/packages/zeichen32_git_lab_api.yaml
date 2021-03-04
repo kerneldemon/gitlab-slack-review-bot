@@ -1,0 +1,6 @@
+zeichen32_git_lab_api:
+  clients:
+    gitlab:
+      token: '%env(GITLAB_TOKEN)%'
+      url: '%env(GITLAB_URL)%'
+      auth_method: url_token
