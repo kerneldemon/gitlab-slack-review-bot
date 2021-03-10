@@ -37,6 +37,20 @@ class GitlabService
         }
     }
 
+    public function notifyAboutAuthorPing(Review $review): void
+    {
+        $mergeRequest = $review->getMergeRequest();
+        $project = $mergeRequest->getProject();
+
+        $body = 'I\'ve notified the author of the merge request';
+
+        try {
+            $this->client->mergeRequests()->addNote($project->getId(), $mergeRequest->getIid(), $body);
+        } catch (Exception $exception) {
+            $this->logger->error('Failed to notify gitlab, system user does not have permissions', ['exception' => $exception]);
+        }
+    }
+
     public function notifyAboutReadyReviews(Author $author, Review $review): void
     {
         $mergeRequest = $review->getMergeRequest();
