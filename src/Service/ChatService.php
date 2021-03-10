@@ -71,6 +71,17 @@ class ChatService
         );
     }
 
+    public function notifyAboutComments(Review $review): void
+    {
+        $mergeRequest = $review->getMergeRequest();
+        $author = $mergeRequest->getAuthor();
+
+        $this->postMessage(
+            $this->fetchChatUsername($author),
+            sprintf('❌ A reviewer has requested changes: %s', $mergeRequest->getUrl())
+        );
+    }
+
     protected function fetchChatUsername(Author $author): string
     {
         $chatUsername = $author->getChatUsername();

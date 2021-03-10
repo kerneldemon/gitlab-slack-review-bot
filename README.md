@@ -38,6 +38,15 @@ If your code changes are relatively small, you can use the group with the word `
 
 Your merge request will be assigned to a single reviewer since you only added minor changes.
 
+## Ping the merge request author
+If you added some comments to the merge requests, it sometimes makes sense to ping the author.
+
+To do that, use a special comment
+
+```
+@review/author
+```
+
 ## What if I get sick or go on a vacation?
 
 Change your slack status to `:palm_tree:` or `:face_with_thermometer:` and the bot will not include you in the code review process
