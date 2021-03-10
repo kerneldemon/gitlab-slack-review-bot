@@ -131,6 +131,7 @@ class ReviewService
     public function notifyAboutComments(Review $review): void
     {
         $this->chatService->notifyAboutComments($review);
+        $this->gitlabService->notifyAboutAuthorPing($review);
     }
 
     private function notifyWithErrorLogging($reviewer, Review $review): void
