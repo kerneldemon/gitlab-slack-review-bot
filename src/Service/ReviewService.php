@@ -128,6 +128,11 @@ class ReviewService
         $this->chatService->notifyAboutCompletion($review);
     }
 
+    public function notifyAboutComments(Review $review): void
+    {
+        $this->chatService->notifyAboutComments($review);
+    }
+
     private function notifyWithErrorLogging($reviewer, Review $review): void
     {
         try {

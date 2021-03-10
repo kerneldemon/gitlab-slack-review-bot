@@ -36,9 +36,12 @@ services:
         - [includeStacktraces]
 
     App\Service\NoteProcessor\ReviewRequestNoteProcessor:
-      tags: [{name: 'app.service.note_processor', priority: 2}]
+      tags: [{name: 'app.service.note_processor', priority: 3}]
 
     App\Service\NoteProcessor\ApprovalNoteProcessor:
+      tags: [{name: 'app.service.note_processor', priority: 2}]
+
+    App\Service\NoteProcessor\PingAuthorNoteProcessor:
       tags: [{name: 'app.service.note_processor', priority: 1}]
 
     App\Service\NoteProcessor\CatchAllNoteProcessor:
