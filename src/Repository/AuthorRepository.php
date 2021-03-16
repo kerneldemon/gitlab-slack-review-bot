@@ -21,12 +21,21 @@ class AuthorRepository extends ServiceEntityRepository
         parent::__construct($registry, Author::class);
     }
 
-    public function findReviewers(Review $review, int $limit, array $allowedAuthorIds = []): array
-    {
+    public function findReviewers(
+        Review $review,
+        int $limit,
+        array $allowedAuthorIds = [],
+        array $requiredAuthorIds = []
+    ): array {
         $ignoredAuthorIds = $this->getAuthorsThatNeedToBeIgnored($review);
-        $potentialAuthors = $this->fetchPotentialAuthors($allowedAuthorIds, $ignoredAuthorIds);
+        $potentialAuthors = $this->fetchPotentialAuthors(
+            $allowedAuthorIds,
+            $ignoredAuthorIds,
+        );
+        $requiredAuthors = $this->findBy(['id' => $requiredAuthorIds]);
+        $selectedAuthors = array_merge($requiredAuthors, $potentialAuthors);
 
-        return array_slice($potentialAuthors, 0, $limit);
+        return array_slice($selectedAuthors, 0, $limit);
     }
 
     private function getAuthorsThatNeedToBeIgnored(Review $review): array
