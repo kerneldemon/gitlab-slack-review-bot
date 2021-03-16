@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Service;
 
+use App\Entity\Comment;
 use App\Entity\Review;
 use App\Factory\AuthorFactory;
 use App\Repository\AuthorRepository;
@@ -12,6 +13,8 @@ use Psr\Log\LoggerInterface;
 
 class AuthorService
 {
+    private const AUTHOR_REGEX = '#@(\S*)#';
+
     private $logger;
 
     private $authorRepository;
@@ -38,9 +41,40 @@ class AuthorService
 
     public function findReviewers(Review $review, int $limit): array
     {
-        $groupAuthorIds = $this->fetchReviewerIdsByScope($review->getScope());
+        $manuallyTaggedReviewerIds = $this->fetchReviewerIdsByReviewComment($review);
+        $groupReviewerIds = $this->fetchReviewerIdsByScope($review->getScope());
 
-        return $this->authorRepository->findReviewers($review, $limit, $groupAuthorIds);
+        return $this->authorRepository->findReviewers(
+            $review,
+            $limit,
+            $groupReviewerIds,
+            $manuallyTaggedReviewerIds
+        );
+    }
+
+    protected function fetchReviewerIdsByReviewComment(Review $review): array
+    {
+        /** @var Comment $comment */
+        $comment = $review->getComments()->first();
+        $note = str_replace($review->getScope(), '', $comment->getNote());
+        $reviewerTagCount = preg_match_all(self::AUTHOR_REGEX, $note, $matches);
+        if ($reviewerTagCount === 0) {
+            return [];
+        }
+
+        $reviewerUsernames = $matches[1];
+        $reviewerIds = [];
+
+        foreach ($reviewerUsernames as $reviewerUsername) {
+            $reviewer = $this->gitlabService->fetchMembersByUsername($reviewerUsername);
+            if ($reviewer === null) {
+                continue;
+            }
+
+            $reviewerIds[] = $reviewer['id'];
+        }
+
+        return $reviewerIds;
     }
 
     protected function fetchReviewerIdsByScope(string $scope)

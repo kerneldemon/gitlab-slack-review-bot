@@ -86,6 +86,16 @@ class GitlabService
         return $this->client->groups()->members($groupId);
     }
 
+    public function fetchMembersByUsername(string $username): ?array
+    {
+        $userList = $this->client->users()->all(['username' => $username]);
+        if (empty($userList)) {
+            return null;
+        }
+
+        return $userList[0];
+    }
+
     public function findAllGroupsByName(string $groupName): iterable
     {
 

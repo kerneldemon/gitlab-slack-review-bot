@@ -1,3 +1,5 @@
+![image](doc/img/bot.png)
+
 # Gitlab slack code review bot
 
 [![Donate](doc/img/paypal-green.svg)](https://www.paypal.com/donate?business=TRZXP9M47HZMJ&item_name=CodeReviewBot&currency_code=EUR)
@@ -9,6 +11,10 @@ When you create a merge request people are reluctant to review it as they feel s
 By tagging a special review group in your merge request a bot will determine which user is best suited to review your code and assign that user to your merge request. From this point on it is the sole duty of the reviewer to review your merge request.
 
 ![image](doc/img/assigned-authors.png)
+
+You can also manually assign any number of developers by tagging them directly
+
+![image](doc/img/manually-assigned-authors.png)
 
 The bot pings reviewers via slack to let them know there's a new merge request up for review.
 
