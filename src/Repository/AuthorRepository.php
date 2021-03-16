@@ -30,8 +30,9 @@ class AuthorRepository extends ServiceEntityRepository
         $ignoredAuthorIds = $this->getAuthorsThatNeedToBeIgnored($review);
         $potentialAuthors = $this->fetchPotentialAuthors(
             $allowedAuthorIds,
-            $ignoredAuthorIds,
+            array_merge($ignoredAuthorIds, $requiredAuthorIds),
         );
+
         $requiredAuthors = $this->findBy(['id' => $requiredAuthorIds]);
         $selectedAuthors = array_merge($requiredAuthors, $potentialAuthors);
 
