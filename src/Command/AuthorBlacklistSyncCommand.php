@@ -113,7 +113,7 @@ class AuthorBlacklistSyncCommand extends Command
             $slackUserResponse = $this->client->usersLookupByEmail(['email' => $author->getEmail()]);
         } catch (Exception $exception) {
             $this->logger->warning($exception->getMessage(), ['email' => $author->getEmail()]);
-            return false;
+            return true;
         }
 
         if (!$slackUserResponse->getOk()) {
