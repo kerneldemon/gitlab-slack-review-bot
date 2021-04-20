@@ -47,10 +47,10 @@ Your merge request will be assigned to a single reviewer since you only added mi
 ## Ping the merge request author
 If you added some comments to the merge requests, it sometimes makes sense to ping the author.
 
-To do that, use a special comment
+To do that, tag the reviewer directly
 
 ```
-@review/author
+@HappyDeveloper Hey, I've added some things you might want to work on
 ```
 
 ## What if I get sick or go on a vacation?

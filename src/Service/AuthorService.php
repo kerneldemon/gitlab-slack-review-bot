@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Service;
 
+use App\Entity\Author;
 use App\Entity\Comment;
 use App\Entity\Review;
 use App\Factory\AuthorFactory;
@@ -127,5 +128,10 @@ class AuthorService
         }
 
         return null;
+    }
+
+    public function getAuthorByUsername(string $username): ?Author
+    {
+        return $this->authorRepository->findOneBy(['username' => $username]);
     }
 }
