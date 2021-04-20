@@ -12,7 +12,7 @@ use App\Service\ReviewService;
 
 class PingAuthorNoteProcessor implements NoteProcessorInterface
 {
-    private const REVIEW_TAG = '@review/author';
+    private const PING_REGEXP = '#@(\S+)#';
 
     private ReviewService $reviewService;
 
@@ -23,12 +23,18 @@ class PingAuthorNoteProcessor implements NoteProcessorInterface
 
     public function supports(Comment $comment): bool
     {
-        return stripos($comment->getNote(), self::REVIEW_TAG) !== false;
+        return (bool) preg_match(self::PING_REGEXP, $comment->getNote());
     }
 
     public function process(Comment $comment): void
     {
-        $review = $this->reviewService->createIfNotExists($comment);
-        $this->reviewService->notifyAboutComments($review);
+        if ($comment->getMergeRequest() === null) {
+            return;
+        }
+
+        preg_match_all(self::PING_REGEXP, $comment->getNote(), $matches);
+        $usernames = $matches[1] ?? [];
+
+        $this->reviewService->notifyAboutPing($comment, $usernames);
     }
 }

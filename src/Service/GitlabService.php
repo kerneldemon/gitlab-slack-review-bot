@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Service;
 
 use App\Entity\Author;
+use App\Entity\Comment;
 use App\Entity\Project;
 use App\Entity\Review;
 use Exception;
@@ -37,12 +38,15 @@ class GitlabService
         }
     }
 
-    public function notifyAboutAuthorPing(Review $review): void
+    public function notifyAboutPing(Comment $comment, int $pingedUsernamesCount): void
     {
-        $mergeRequest = $review->getMergeRequest();
+        $mergeRequest = $comment->getMergeRequest();
         $project = $mergeRequest->getProject();
 
-        $body = 'I\'ve notified the author of the merge request';
+        $body = 'I\'ve notified the person you pinged directly';
+        if ($pingedUsernamesCount > 1) {
+            $body = 'I\'ve notified the people you pinged';
+        }
 
         try {
             $this->client->mergeRequests()->addNote($project->getId(), $mergeRequest->getIid(), $body);

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Service;
 
+use App\Constant\Gitlab\SystemUser;
 use App\Constant\Review\Status;
 use App\Entity\Comment;
 use App\Entity\Review;
@@ -128,10 +129,23 @@ class ReviewService
         $this->chatService->notifyAboutCompletion($review);
     }
 
-    public function notifyAboutComments(Review $review): void
+    public function notifyAboutPing(Comment $comment, array $pingedUsernames): void
     {
-        $this->chatService->notifyAboutComments($review);
-        $this->gitlabService->notifyAboutAuthorPing($review);
+        if ($comment->getAuthor()->getUsername() === SystemUser::NAME) {
+            $this->logger->debug('Skipping ping from the system user');
+            return;
+        }
+
+        foreach ($pingedUsernames as $pingedUsername) {
+            $pingedAuthor = $this->authorService->getAuthorByUsername($pingedUsername);
+            if ($pingedAuthor === null) {
+                return;
+            }
+
+            $this->chatService->notifyAboutPing($comment, $pingedAuthor);
+        }
+
+        $this->gitlabService->notifyAboutPing($comment, count($pingedUsernames));
     }
 
     private function notifyWithErrorLogging($reviewer, Review $review): void

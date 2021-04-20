@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace App\Service;
 
 use App\Entity\Author;
+use App\Entity\Comment;
 use App\Entity\Review;
+use App\Repository\AuthorRepository;
 use Exception;
 use JoliCode\Slack\Api\Client;
 use Psr\Log\LoggerInterface;
@@ -13,16 +15,20 @@ use RuntimeException;
 
 class ChatService
 {
-    private $client;
+    private Client $client;
 
-    private $logger;
+    private LoggerInterface $logger;
+
+    private AuthorRepository $authorRepository;
 
     public function __construct(
         Client $client,
-        LoggerInterface $logger
+        LoggerInterface $logger,
+        AuthorRepository $authorRepository
     ) {
         $this->client = $client;
         $this->logger = $logger;
+        $this->authorRepository = $authorRepository;
     }
 
     public function notifyAboutAdditionalReview(Review $review): void
@@ -71,36 +77,37 @@ class ChatService
         );
     }
 
-    public function notifyAboutComments(Review $review): void
+    public function notifyAboutPing(Comment $comment, Author $pingedAuthor): void
     {
-        $mergeRequest = $review->getMergeRequest();
-        $author = $mergeRequest->getAuthor();
+        $mergeRequest = $comment->getMergeRequest();
 
         $this->postMessage(
-            $this->fetchChatUsername($author),
-            sprintf('❌ A reviewer has requested changes: %s', $mergeRequest->getUrl())
+            $this->fetchChatUsername($pingedAuthor),
+            sprintf('👋 You have been pinged: %s', $mergeRequest->getUrl())
         );
     }
 
     protected function fetchChatUsername(Author $author): string
     {
         $chatUsername = $author->getChatUsername();
-        if (!$chatUsername) {
-            $this->logger->info('Retrieving user chat username by email');
-
-            $users = null;
-            try {
-                $users = $this->client->usersLookupByEmail(['email' => $author->getEmail()]);
-            } catch (Exception $exception) {
-            }
-
-            if ($users === null || !$users->getOk()) {
-                throw new RuntimeException('Could not get user by email: ' . $author->getEmail());
-            }
-
-            $chatUsername = $users->getUser()->getId();
-            $author->setChatUsername($chatUsername);
+        if ($chatUsername) {
+            return $chatUsername;
         }
+
+        $this->logger->info('Retrieving user chat username by email');
+
+        $users = null;
+        try {
+            $users = $this->client->usersLookupByEmail(['email' => $author->getEmail()]);
+        } catch (Exception $exception) {
+        }
+
+        if ($users === null || !$users->getOk()) {
+            throw new RuntimeException('Could not get user by email: ' . $author->getEmail());
+        }
+
+        $chatUsername = $users->getUser()->getId();
+        $author->setChatUsername($chatUsername);
 
         return $chatUsername;
     }
@@ -108,12 +115,15 @@ class ChatService
     protected function postMessage(string $channel, string $text): void
     {
         try {
+            $this->logger->warning('Chat post message', ['text' => $text]);
+
             $this->client->chatPostMessage(
                 [
                     'channel' => $channel,
                     'text' => $text,
                 ]
             );
+
         } catch (Exception $exception) {
             $this->logger->error('Failed to publish to slack', ['exception' => $exception]);
         }
