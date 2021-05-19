@@ -57,6 +57,10 @@ class AuthorService
     {
         /** @var Comment $comment */
         $comment = $review->getComments()->first();
+        if (!$comment) {
+            return [];
+        }
+
         $note = str_replace($review->getScope(), '', $comment->getNote());
         $reviewerTagCount = preg_match_all(self::AUTHOR_REGEX, $note, $matches);
         if ($reviewerTagCount === 0) {

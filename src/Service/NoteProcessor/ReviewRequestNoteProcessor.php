@@ -14,11 +14,6 @@ use App\Service\ScopeService;
 
 class ReviewRequestNoteProcessor implements NoteProcessorInterface
 {
-    private const STATUSES_THAT_CAN_TRIGGER_ADDITIONAL_REVIEW = [
-        ReviewStatus::IN_REVIEW,
-        ReviewStatus::COMPLETED,
-    ];
-
     private $reviewService;
 
     private $chatService;
@@ -66,6 +61,10 @@ class ReviewRequestNoteProcessor implements NoteProcessorInterface
     protected function processReview(Comment $comment, string $scopeName): void
     {
         $review = $this->reviewService->findByComment($comment);
+        if ($review === null) {
+            $review = $this->reviewService->createByComment($comment);
+        }
+
         if ($this->isAdditionalReviewNeeded($review)) {
             $review->setStatus(ReviewStatus::IN_REVIEW);
 
@@ -75,20 +74,14 @@ class ReviewRequestNoteProcessor implements NoteProcessorInterface
             return;
         }
 
-        if ($review === null) {
-            $review = $this->reviewService->createByComment($comment);
-        }
-
         $review->setScope($scopeName);
         $review->setStatus(ReviewStatus::IN_REVIEW);
+
+        $this->reviewService->notifyAboutReadyReviewsOnComment($review);
     }
 
     protected function isAdditionalReviewNeeded(?Review $review): bool
     {
-        return $review !== null && in_array(
-                $review->getStatus(),
-                self::STATUSES_THAT_CAN_TRIGGER_ADDITIONAL_REVIEW,
-                true
-            );
+        return $review->getReviewers()->count() > 0;
     }
 }
