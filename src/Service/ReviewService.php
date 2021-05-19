@@ -65,6 +65,8 @@ class ReviewService
 
         $review->setProject($comment->getProject());
         $review->setMergeRequest($comment->getMergeRequest());
+
+        $review->addComment($comment);
         $comment->setReview($review);
 
         $this->entityManager->persist($review);
@@ -88,33 +90,20 @@ class ReviewService
         return $review;
     }
 
-    public function notifyAboutReadyReviews(Scope $scope): void
+    public function notifyAboutReadyReviewsOnComment(Review $review): void
     {
-        $numberOfReviewersNeeded = $this->scopeToNumberOfReviewersMapper->mapByScope($scope);
+        $numberOfReviewersNeeded = $this->scopeToNumberOfReviewersMapper->mapByScopeName($review->getScope());
+        $reviewers = $this->authorService->findReviewers($review, $numberOfReviewersNeeded);
+        if (count($reviewers) === 0) {
+            $this->logger->warning('Couldn\'t find reviewers', ['review' => $review->getId()]);
 
-        $reviewInfos = $this->reviewRepository->findReadyReviews($scope, $numberOfReviewersNeeded);
-        foreach ($reviewInfos as $reviewInfo) {
-            /** @var Review $review */
-            $review = $reviewInfo[0];
-            $currentReviewerCount = (int) $reviewInfo['reviewerCount'];
-            $remainingReviewerCount = $numberOfReviewersNeeded - $currentReviewerCount;
-            if ($remainingReviewerCount <= 0) {
-                $review->setStatus(Status::CLOSED);
-                continue;
-            }
-
-            $reviewers = $this->authorService->findReviewers($review, $remainingReviewerCount);
-            if (count($reviewers) === 0) {
-                continue;
-            }
-
-            foreach ($reviewers as $reviewer) {
-                $review->addReviewer($reviewer);
-                $this->notifyWithErrorLogging($reviewer, $review);
-            }
+            return;
         }
 
-        $this->entityManager->flush();
+        foreach ($reviewers as $reviewer) {
+            $review->addReviewer($reviewer);
+            $this->notifyWithErrorLogging($reviewer, $review);
+        }
     }
 
     public function notifyAboutCompletion(Review $review): void
