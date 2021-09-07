@@ -49,27 +49,31 @@ class WebhookService
     public function createForProject(Project $project)
     {
         $routes = $this->getWebhookRoutes();
-
-        foreach ($routes as $route) {
-            $this->deleteOld($project, $route);
-            $this->createNew($project, $route);
-        }
+        $this->updateWebhooks($project, $routes);
     }
 
-    private function createNew(Project $project, array $route): void
-    {
-        $this->gitlabService->createWebhook($project, $route['absolute'], $route['parameters']);
-    }
-
-    private function deleteOld(Project $project, array $route)
+    private function updateWebhooks(Project $project, array $routes): void
     {
         $webhooks = $this->gitlabService->fetchWebhooks($project);
-        foreach ($webhooks as $webhook) {
-            if (stripos($webhook['url'], $route['relative']) === false) {
-                continue;
+        foreach ($routes as $route) {
+            $webhookCreationNeeded = true;
+            foreach ($webhooks as $webhook) {
+                if (stripos($webhook['url'], $route['relative']) === false) {
+                    continue;
+                }
+
+                if ($webhook['url'] === $route['absolute']) {
+                    $webhookCreationNeeded = false;
+                    break;
+                }
+
+                $this->gitlabService->deleteWebhook($project, $webhook['id']);
+                break;
             }
 
-            $this->gitlabService->deleteWebhook($project, $webhook['id']);
+            if ($webhookCreationNeeded) {
+                $this->gitlabService->createWebhook($project, $route['absolute'], $route['parameters']);
+            }
         }
     }
 
