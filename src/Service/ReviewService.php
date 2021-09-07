@@ -8,7 +8,6 @@ use App\Constant\Gitlab\SystemUser;
 use App\Constant\Review\Status;
 use App\Entity\Comment;
 use App\Entity\Review;
-use App\Entity\Scope;
 use App\Mappers\ScopeToNumberOfReviewersMapper;
 use App\Repository\ReviewRepository;
 use Doctrine\ORM\EntityManagerInterface;
@@ -109,6 +108,11 @@ class ReviewService
     public function notifyAboutCompletion(Review $review): void
     {
         $scopeName = $review->getScope();
+        if (!$scopeName) {
+            $this->logger->warning('Scope is not defined for review', ['review' => $review->getId()]);
+            return;
+        }
+
         $numberOfReviewers = $this->scopeToNumberOfReviewersMapper->mapByScopeName($scopeName);
         if ($review->getApprovalCount() < $numberOfReviewers) {
             return;
