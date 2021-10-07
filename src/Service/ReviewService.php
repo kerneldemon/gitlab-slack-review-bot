@@ -69,6 +69,7 @@ class ReviewService
         $comment->setReview($review);
 
         $this->entityManager->persist($review);
+        $this->entityManager->flush();
 
         return $review;
     }
@@ -85,6 +86,7 @@ class ReviewService
         $comment->setReview($review);
 
         $this->entityManager->persist($review);
+        $this->entityManager->flush();
 
         return $review;
     }
