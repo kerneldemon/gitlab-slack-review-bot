@@ -12,11 +12,11 @@ class ScopeToNumberOfReviewersMapper
 
     public function mapByScopeName(string $name): int
     {
-        if (stripos($name, 'urgent')) {
+        if (stripos($name, 'urgent') !== false) {
             return self::URGENT_REVIEWER_COUNT;
         }
 
-        if (stripos($name, 'small')) {
+        if (stripos($name, 'small') !== false) {
             return self::SMALL_REVIEWER_COUNT;
         }
 
