@@ -23,6 +23,11 @@ class AuthorBlacklist
      */
     private $author;
 
+    /**
+     * @ORM\Column(type="boolean")
+     */
+    private $banned;
+
     public function getId(): ?int
     {
         return $this->id;
@@ -36,6 +41,18 @@ class AuthorBlacklist
     public function setAuthor(Author $author): self
     {
         $this->author = $author;
+
+        return $this;
+    }
+
+    public function isBanned(): bool
+    {
+        return $this->banned;
+    }
+
+    public function setBanned($banned): self
+    {
+        $this->banned = $banned;
 
         return $this;
     }

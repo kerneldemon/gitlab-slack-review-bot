@@ -112,7 +112,7 @@ class ChatService
         return $chatUsername;
     }
 
-    protected function postMessage(string $channel, string $text): void
+    public function postMessage(string $channel, string $text): void
     {
         try {
             $this->logger->warning('Chat post message', ['text' => $text]);

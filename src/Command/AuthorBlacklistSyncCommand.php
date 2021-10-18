@@ -12,6 +12,7 @@ use App\Repository\AuthorRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Exception;
 use JoliCode\Slack\Api\Client;
+use JoliCode\Slack\Exception\SlackErrorResponse;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
@@ -19,6 +20,10 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class AuthorBlacklistSyncCommand extends Command
 {
+    private const STATUS_WHITELISTED = 'whitelisted';
+    private const STATUS_BLACKLISTED = 'blacklisted';
+    private const STATUS_BANNED = 'banned';
+
     private const IGNORED_USERNAMES = [
         SystemUser::NAME,
     ];
@@ -71,12 +76,22 @@ class AuthorBlacklistSyncCommand extends Command
     {
         $blacklistedAuthors = $this->authorBlacklistRepository->findAll();
         foreach ($blacklistedAuthors as $blacklistedAuthor) {
-            $author = $blacklistedAuthor->getAuthor();
-            if ($this->isAuthorIgnored($author)) {
+            if ($blacklistedAuthor->isBanned()) {
                 continue;
             }
 
-            if ($this->isAuthorBlacklistedInSlack($author)) {
+            $author = $blacklistedAuthor->getAuthor();
+            if (!$author || $this->isAuthorIgnored($author)) {
+                continue;
+            }
+
+            $authorStatusInBlacklist = $this->fetchAuthorStatusInBlacklist($author);
+            if ($authorStatusInBlacklist === self::STATUS_BANNED) {
+                $blacklistedAuthor->setBanned(true);
+                continue;
+            }
+
+            if ($authorStatusInBlacklist === self::STATUS_BLACKLISTED) {
                 continue;
             }
 
@@ -92,37 +107,71 @@ class AuthorBlacklistSyncCommand extends Command
                 continue;
             }
 
-            if (!$this->isAuthorBlacklistedInSlack($author)) {
+            $authorStatusInBlacklist = $this->fetchAuthorStatusInBlacklist($author);
+            if ($authorStatusInBlacklist === self::STATUS_WHITELISTED) {
                 continue;
             }
 
             $authorBlacklist = new AuthorBlacklist();
             $authorBlacklist->setAuthor($author);
+            $authorBlacklist->setBanned($authorStatusInBlacklist === self::STATUS_BANNED);
 
             $this->entityManager->persist($authorBlacklist);
         }
     }
 
-    protected function isAuthorBlacklistedInSlack(Author $author): bool
+    protected function fetchAuthorStatusInBlacklist(Author $author): string
     {
         if ($author->getEmail() === null) {
-            return false;
+            return self::STATUS_WHITELISTED;
         }
 
         try {
             $slackUserResponse = $this->client->usersLookupByEmail(['email' => $author->getEmail()]);
+        } catch (SlackErrorResponse $slackErrorResponse) {
+            if ($slackErrorResponse->getErrorCode() === 'users_not_found') {
+                return self::STATUS_BANNED;
+            }
+
+            $this->logger->error('Slack error response received', [
+                'email' => $author->getEmail(),
+                'response' => $slackErrorResponse->getMessage(),
+            ]);
+
+            return self::STATUS_WHITELISTED;
         } catch (Exception $exception) {
-            $this->logger->warning($exception->getMessage(), ['email' => $author->getEmail()]);
-            return true;
+            $this->logger->error($exception->getMessage(), ['email' => $author->getEmail()]);
+
+            return self::STATUS_WHITELISTED;
         }
 
-        if (!$slackUserResponse->getOk()) {
-            return false;
+        if (!$slackUserResponse || !$slackUserResponse->getOk()) {
+            $this->logger->warning('Slack fetch by email not ok', ['response' => $slackUserResponse]);
+
+            return self::STATUS_WHITELISTED;
         }
 
-        $profile = $slackUserResponse->getUser()->getProfile();
+        $slackUser = $slackUserResponse->getUser();
+        if (!$slackUser) {
+            $this->logger->warning('Could not fetch slack user from response');
 
-        return in_array($profile->getStatusEmoji(), self::BLACKLIST_EMOJIS, true);
+            return self::STATUS_WHITELISTED;
+        }
+
+        $profile = $slackUser->getProfile();
+        if (!$profile) {
+            $this->logger->warning('Could not fetch slack profile from response');
+
+            return self::STATUS_WHITELISTED;
+        }
+
+        $hasBlacklistedEmoji = in_array(
+            $profile->getStatusEmoji(),
+            self::BLACKLIST_EMOJIS,
+            true
+        );
+
+        return $hasBlacklistedEmoji ? self::STATUS_BLACKLISTED : self::STATUS_WHITELISTED;
     }
 
     protected function isAuthorIgnored(Author $author): bool
