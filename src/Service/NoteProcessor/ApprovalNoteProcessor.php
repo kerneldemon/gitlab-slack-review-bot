@@ -9,14 +9,27 @@ use App\Constant\Review\Status;
 use App\Entity\Comment;
 use App\Entity\Review;
 use App\Service\ReviewService;
+use Doctrine\DBAL\LockMode;
+use Doctrine\ORM\EntityManagerInterface;
+use Exception;
+use Psr\Log\LoggerInterface;
 
 class ApprovalNoteProcessor implements NoteProcessorInterface
 {
-    private $reviewService;
+    private ReviewService $reviewService;
 
-    public function __construct(ReviewService $reviewService)
-    {
+    private EntityManagerInterface $entityManager;
+
+    private LoggerInterface $logger;
+
+    public function __construct(
+        ReviewService $reviewService,
+        EntityManagerInterface $entityManager,
+        LoggerInterface $logger
+    ) {
         $this->reviewService = $reviewService;
+        $this->entityManager = $entityManager;
+        $this->logger = $logger;
     }
 
     public function supports(Comment $comment): bool
@@ -27,15 +40,35 @@ class ApprovalNoteProcessor implements NoteProcessorInterface
     public function process(Comment $comment): void
     {
         $review = $this->reviewService->createIfNotExists($comment);
+        $connection = $this->entityManager->getConnection();
+
+        try {
+            $connection->beginTransaction();
+            $this->entityManager->lock($review, LockMode::PESSIMISTIC_WRITE);
+
+            $this->processReview($review, $comment);
+            $connection->commit();
+
+        } catch (Exception $exception) {
+            $this->logger->error('Error, rollbacking transaction', ['exception' => $exception]);
+            $connection->rollBack();
+        }
+    }
+
+    protected function processReview(Review $review, Comment $comment): void
+    {
         if ($review->getStatus() === Status::COMPLETED) {
+            $this->logger->warning('Merge request already completed', ['review' => $review->getId()]);
             return;
         }
 
         if ($this->doesCommentBelongToMergeRequestAuthor($comment, $review)) {
+            $this->logger->warning('Comment belongs to MR author', ['review' => $review->getId()]);
             return;
         }
 
         if ($this->hasAlreadyApproved($comment, $review)) {
+            $this->logger->warning('MR already approved', ['review' => $review->getId()]);
             return;
         }
 
@@ -57,6 +90,10 @@ class ApprovalNoteProcessor implements NoteProcessorInterface
     {
         $reviewComments = $review->getComments();
         foreach ($reviewComments as $reviewComment) {
+            if ($reviewComment->getId() === $comment->getId()) {
+                continue;
+            }
+
             if ($comment->getAuthor()->getId() !== $reviewComment->getAuthor()->getId()) {
                 continue;
             }
