@@ -24,6 +24,7 @@ class CommentArgumentValueResolver implements ArgumentValueResolverInterface
     private const MERGE_REQUEST_CONTEXT = [UnwrappingDenormalizer::UNWRAP_PATH => '[merge_request]'];
     private const PROJECT_CONTEXT = [UnwrappingDenormalizer::UNWRAP_PATH => '[project]'];
     private const USER_CONTEXT = [UnwrappingDenormalizer::UNWRAP_PATH => '[user]'];
+    private const SPECIAL_KEYWORD_REDACTED = 'redacted';
 
     private $serializer;
 
@@ -137,8 +138,11 @@ class CommentArgumentValueResolver implements ArgumentValueResolverInterface
 
         $author = new Author();
         $author->setId((int) $eventObjectAttributes->getAuthorId());
-        $author->setEmail($user->getEmail());
         $author->setUsername($user->getUsername());
+
+        if (stripos($user->getEmail(), self::SPECIAL_KEYWORD_REDACTED) === false) {
+            $author->setEmail($user->getEmail());
+        }
 
         /** @var Author $author */
         $author = $this->entityArgumentValueResolverHelper->persist(Author::class, $author);
