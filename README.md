@@ -61,20 +61,20 @@ Change your slack status to `:palm_tree:` or `:face_with_thermometer:` and the b
 
 ## How to setup
 
-1.  Create a `review` group with a `backend` subgroup.
+1. Create a `review` group with a `backend` subgroup.
 You should be able to tag the group in MR comments as `@review/backend`
 Add a few members to that group.
 
-1.  Create a dedicated gitlab user (e.g. CodeReviewBot) for code review messages. 
+2. Create a dedicated gitlab user (e.g. CodeReviewBot) for code review messages. 
 Add that user as owner to the parent group of the repositories.  
 
-1.  Clone the repository
+3. Clone the repository
 
-1.  Change .env values according to your own gitlab setup.
+4. Change .env values according to your own gitlab setup.
     1.  Generate a gitlab token from the user that will post comments as CodeReviewBot (GITLAB_TOKEN variable)
     1.  Create a slack app in your organization that has the permissions to find users by email and message them directly (SLACK_ACCESS_TOKEN variable)
 
-1.  Build and run the docker container.
+5. Build and run the docker container.
 Make sure the container is available externally so that your gitlab can make webhook requests into the container.
 Fill the external url of the bot in the .env variable (DEFAULT_URI variable)
 
@@ -83,24 +83,23 @@ docker build -t bot .
 docker run -it --name bot bot
 ```
 
-1.  Run the following command to sync all available members of the group
+6. Run the following command to sync all available members of the group
 
 ```
 php bin/console app:author:sync
 ```
 
-1.  Run the following command to setup webhooks on all projects
-
+7. Run the following command to setup webhooks on all projects
 ```
 php bin/console app:project:setup
 ```
 
-1. Post a comment `@review/backend` and the bot will assign you a reviewer from the group
+8. Post a comment `@review/backend` and the bot will assign you a reviewer from the group
 By default, `@review/backend/urgent` and `@review/backend/small` are available as well, so you can create these groups in gitlab.
 If you create even more groups in gitlab (e.g. `@review/custom/developers`) you can easility
 inform the bot about them using the `php bin/console app:scope:add` command
 
-1. Create a gitlab cron job that sets all your users email as public
+9. Create a gitlab cron job that sets all your users email as public
 ```sql
 update users set public_email = email;
 ```
@@ -108,4 +107,4 @@ Alternatively, you can just ask the users to set their public email in their set
 This is needed because otherwise gitlab will send `redacted` in the webhook content
 instead of the actual email of the user who commented on a merge request.
 
-1. Enjoy the added responsibility of mandatory code review :)
+10. Enjoy the added responsibility of mandatory code review :)
