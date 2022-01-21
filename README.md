@@ -95,9 +95,17 @@ php bin/console app:author:sync
 php bin/console app:project:setup
 ```
 
-1.  Post a comment `@review/backend` and the bot will assign you a reviewer from the group
+1. Post a comment `@review/backend` and the bot will assign you a reviewer from the group
 By default, `@review/backend/urgent` and `@review/backend/small` are available as well, so you can create these groups in gitlab.
 If you create even more groups in gitlab (e.g. `@review/custom/developers`) you can easility
 inform the bot about them using the `php bin/console app:scope:add` command
 
-1.  Enjoy the added responsibility of mandatory code review :)
+1. Create a gitlab cron job that sets all your users email as public
+```sql
+update users set public_email = email;
+```
+Alternatively, you can just ask the users to set their public email in their settings. 
+This is needed because otherwise gitlab will send `redacted` in the webhook content
+instead of the actual email of the user who commented on a merge request.
+
+1. Enjoy the added responsibility of mandatory code review :)
