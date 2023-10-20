@@ -68,6 +68,7 @@ class ReviewRequestNoteProcessor implements NoteProcessorInterface
         if ($this->isAdditionalReviewNeeded($review)) {
             $review->setStatus(ReviewStatus::IN_REVIEW);
 
+            $this->gitlabService->unapprove($review->getMergeRequest());
             $this->chatService->notifyAboutAdditionalReview($review);
             $this->gitlabService->notifyAboutAdditionalReview($review);
 
