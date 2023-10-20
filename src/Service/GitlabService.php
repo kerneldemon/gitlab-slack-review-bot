@@ -6,8 +6,10 @@ namespace App\Service;
 
 use App\Entity\Author;
 use App\Entity\Comment;
+use App\Entity\MergeRequest;
 use App\Entity\Project;
 use App\Entity\Review;
+use App\Entity\Scope;
 use Exception;
 use Gitlab\Client;
 use Psr\Log\LoggerInterface;
@@ -62,6 +64,23 @@ class GitlabService
         $username = $author->getUsername();
 
         $body = sprintf('@%s, please review this merge request', $username);
+
+        try {
+            $this->client->mergeRequests()->addNote($project->getId(), $mergeRequest->getIid(), $body);
+        } catch (Exception $exception) {
+            $this->logger->error('Failed to notify gitlab, system user does not have permissions', ['exception' => $exception]);
+        }
+    }
+
+    public function notifyAboutInitialReviewRequest(MergeRequest $mergeRequest, Scope $scope): void
+    {
+        $project = $mergeRequest->getProject();
+
+        $pattern = sprintf('%s(%s.*)$%si', $scope->getName(), chr(1), chr(1));
+        preg_match($pattern, $mergeRequest->getDescription(), $matches);
+        $scopeContent = empty($matches[1]) ? $scope->getName() : $matches[1];
+
+        $body = sprintf('Hang on, I\'m searching for reviewers for this merge request %s', $scopeContent);
 
         try {
             $this->client->mergeRequests()->addNote($project->getId(), $mergeRequest->getIid(), $body);
