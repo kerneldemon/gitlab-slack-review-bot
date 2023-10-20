@@ -51,6 +51,16 @@ services:
       arguments:
         $noteProcessors: !tagged_iterator app.service.note_processor
 
+    App\Service\MergeRequestProcessor\MergeRequestStatusChangeProcessor:
+      tags: [{name: 'app.service.merge_request_processor'}]
+
+    App\Service\MergeRequestProcessor\ReviewRequestProcessor:
+      tags: [{name: 'app.service.merge_request_processor'}]
+
+    App\Service\MergeRequestService:
+      arguments:
+        $mergeRequestProcessors: !tagged_iterator app.service.merge_request_processor
+
     JoliCode\Slack\Api\Client:
       factory: ['JoliCode\Slack\ClientFactory', 'create']
       arguments: ['%slack.access_token%']
