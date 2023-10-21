@@ -37,7 +37,7 @@ class ChatService
             $this->postMessage(
                 $this->fetchChatUsername($reviewer),
                 sprintf(
-                    '🗑️%s A MR from %s (%s) was re-assigned to different group, you no longer need to review it',
+                    '🗑️ %s A MR from %s (%s) was re-assigned to different group, you no longer need to review it',
                     $review->getScope(),
                     $review->getMergeRequest()->getAuthor()->getUsername(),
                     $review->getMergeRequest()->getUrl()
