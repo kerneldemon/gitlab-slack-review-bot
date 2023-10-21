@@ -14,7 +14,7 @@ use Doctrine\ORM\EntityManagerInterface;
 use Exception;
 use Psr\Log\LoggerInterface;
 
-class ApprovalNoteProcessor implements NoteProcessorInterface
+class ApprovalNoteProcessor extends AbstractNoteProcessor implements NoteProcessorInterface
 {
     private ReviewService $reviewService;
 

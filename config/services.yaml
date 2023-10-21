@@ -35,6 +35,10 @@ services:
       calls:
         - [includeStacktraces]
 
+    App\Service\NoteProcessor\ReviewScopeReassignNoteProcessor:
+      tags: [{name: 'app.service.note_processor', priority: 4}]
+
+
     App\Service\NoteProcessor\ReviewRequestNoteProcessor:
       tags: [{name: 'app.service.note_processor', priority: 3}]
 

@@ -31,6 +31,21 @@ class ChatService
         $this->authorRepository = $authorRepository;
     }
 
+    public function notifyAboutReassign(Review $review): void
+    {
+        foreach ($review->getReviewers() as $reviewer) {
+            $this->postMessage(
+                $this->fetchChatUsername($reviewer),
+                sprintf(
+                    '🗑️%s A MR from %s (%s) was re-assigned to different group, you no longer need to review it',
+                    $review->getScope(),
+                    $review->getMergeRequest()->getAuthor()->getUsername(),
+                    $review->getMergeRequest()->getUrl()
+                )
+            );
+        }
+    }
+
     public function notifyAboutAdditionalReview(Review $review): void
     {
         $reviewers = $review->getReviewers();

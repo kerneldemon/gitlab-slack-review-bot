@@ -7,7 +7,7 @@ namespace App\Service\NoteProcessor;
 use App\Entity\Comment;
 use Psr\Log\LoggerInterface;
 
-class CatchAllNoteProcessor implements NoteProcessorInterface
+class CatchAllNoteProcessor extends AbstractNoteProcessor implements NoteProcessorInterface
 {
     private $logger;
 

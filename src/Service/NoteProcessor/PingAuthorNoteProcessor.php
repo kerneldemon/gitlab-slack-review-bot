@@ -10,7 +10,7 @@ use App\Entity\Comment;
 use App\Entity\Review;
 use App\Service\ReviewService;
 
-class PingAuthorNoteProcessor implements NoteProcessorInterface
+class PingAuthorNoteProcessor extends AbstractNoteProcessor implements NoteProcessorInterface
 {
     private const PING_REGEXP = '#@(\S+)#';
 
