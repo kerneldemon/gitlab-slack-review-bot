@@ -4,10 +4,9 @@ declare(strict_types=1);
 
 namespace App\Service;
 
-use App\Constant\MergeRequest\State;
-use App\Constant\Review\Status;
 use App\Entity\MergeRequest;
 use App\Repository\MergeRequestRepository;
+use App\Service\MergeRequestProcessor\MergeRequestProcessorInterface;
 use Doctrine\ORM\EntityManagerInterface;
 
 class MergeRequestService
@@ -16,18 +15,26 @@ class MergeRequestService
 
     private $mergeRequestRepository;
 
+    /** @var MergeRequestProcessorInterface[] */
+    private $mergeRequestProcessors;
+
     public function __construct(
         EntityManagerInterface $entityManager,
-        MergeRequestRepository $mergeRequestRepository
+        MergeRequestRepository $mergeRequestRepository,
+        iterable $mergeRequestProcessors
     ) {
         $this->entityManager = $entityManager;
         $this->mergeRequestRepository = $mergeRequestRepository;
+        $this->mergeRequestProcessors = $mergeRequestProcessors;
     }
 
     public function processMergeRequest(MergeRequest $mergeRequest): MergeRequest
     {
-        if ($mergeRequest->getState() === State::MERGED) {
-            $this->updateReviewStatus($mergeRequest);
+        foreach ($this->mergeRequestProcessors as $mergeRequestProcessor) {
+            if ($mergeRequestProcessor->supports($mergeRequest)) {
+                $mergeRequestProcessor->process($mergeRequest);
+                break;
+            }
         }
 
         $this->entityManager->flush();
@@ -42,15 +49,5 @@ class MergeRequestService
     public function findByReviewStatus(string $reviewStatus): iterable
     {
         return $this->mergeRequestRepository->findByReviewStatus($reviewStatus);
-    }
-
-    protected function updateReviewStatus(MergeRequest $mergeRequest): void
-    {
-        $review = $mergeRequest->getReview();
-        if ($review === null) {
-            return;
-        }
-
-        $review->setStatus(Status::CLOSED);
     }
 }

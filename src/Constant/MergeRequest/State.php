@@ -9,4 +9,5 @@ use MyCLabs\Enum\Enum;
 class State extends Enum
 {
     public const MERGED = 'merged';
+    public const OPENED = 'opened';
 }

@@ -6,8 +6,10 @@ namespace App\Service;
 
 use App\Entity\Author;
 use App\Entity\Comment;
+use App\Entity\MergeRequest;
 use App\Entity\Project;
 use App\Entity\Review;
+use App\Entity\Scope;
 use Exception;
 use Gitlab\Client;
 use Psr\Log\LoggerInterface;

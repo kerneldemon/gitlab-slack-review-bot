@@ -58,6 +58,16 @@ class MergeRequest
      */
     private $review;
 
+    /**
+     * @ORM\Column(type="text", nullable=true)
+     */
+    private $description;
+
+    /**
+     * @ORM\Column(type="string", nullable=true)
+     */
+    private $action;
+
     public function __construct()
     {
         $this->mergeStatus = MergeStatus::UNKNOWN;
@@ -163,4 +173,30 @@ class MergeRequest
 
         return $this;
     }
+
+    public function getDescription(): ?string
+    {
+        return $this->description;
+    }
+
+    public function setDescription($description): self
+    {
+        $this->description = $description;
+
+        return $this;
+    }
+
+    public function getAction(): ?string
+    {
+        return $this->action;
+    }
+
+    public function setAction($action): self
+    {
+        $this->action = $action;
+
+        return $this;
+    }
+
+
 }

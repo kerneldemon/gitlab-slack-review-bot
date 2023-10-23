@@ -7,6 +7,7 @@ namespace App\Service;
 use App\Constant\Gitlab\SystemUser;
 use App\Constant\Review\Status;
 use App\Entity\Comment;
+use App\Entity\MergeRequest;
 use App\Entity\Review;
 use App\Mappers\ScopeToNumberOfReviewersMapper;
 use App\Repository\ReviewRepository;
@@ -50,10 +51,15 @@ class ReviewService
 
     public function findByComment(Comment $comment): ?Review
     {
+        return $this->findByMergeRequest($comment->getMergeRequest());
+    }
+
+    public function findByMergeRequest(MergeRequest $mergeRequest): ?Review
+    {
         return $this->reviewRepository->findOneBy(
             [
-                'mergeRequest' => $comment->getMergeRequest()->getId(),
-                'project' => $comment->getProject()->getId(),
+                'mergeRequest' => $mergeRequest->getId(),
+                'project' => $mergeRequest->getProject()->getId(),
             ]
         );
     }
@@ -67,6 +73,22 @@ class ReviewService
 
         $review->addComment($comment);
         $comment->setReview($review);
+
+        $this->entityManager->persist($review);
+        $this->entityManager->flush();
+
+        return $review;
+    }
+
+
+    public function createByMergeRequest(MergeRequest $mergeRequest): Review
+    {
+        $review = new Review();
+
+        $review->setProject($mergeRequest->getProject());
+        $review->setMergeRequest($mergeRequest);
+
+        $mergeRequest->setReview($review);
 
         $this->entityManager->persist($review);
         $this->entityManager->flush();
