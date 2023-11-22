@@ -38,7 +38,7 @@ class ReviewScopeReassignNoteProcessor implements NoteProcessorInterface
             return false;
         }
 
-        if (stripos($comment->getNote(), $review->getScope())) {
+        if (stripos($comment->getNote(), $review->getScope()) !== false) {
             return false;
         }
 
