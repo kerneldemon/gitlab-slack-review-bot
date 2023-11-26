@@ -123,4 +123,22 @@ class GitlabService
             $page++;
         } while (true);
     }
+
+    public function approve(MergeRequest $mergeRequest)
+    {
+        try {
+            $this->client->mergeRequests()->approve($mergeRequest->getProject()->getId(), $mergeRequest->getIid());
+        } catch (Exception $exception) {
+            $this->logger->error('Failed to notify gitlab, system user does not have permissions', ['exception' => $exception]);
+        }
+    }
+
+    public function unapprove(MergeRequest $mergeRequest)
+    {
+        try {
+            $this->client->mergeRequests()->unapprove($mergeRequest->getProject()->getId(), $mergeRequest->getIid());
+        } catch (Exception $exception) {
+            $this->logger->error('Failed to notify gitlab, system user does not have permissions', ['exception' => $exception]);
+        }
+    }
 }

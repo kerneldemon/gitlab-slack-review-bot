@@ -143,6 +143,7 @@ class ReviewService
         }
 
         $review->setStatus(Status::COMPLETED);
+        $this->gitlabService->approve($review->getMergeRequest());
         $this->chatService->notifyAboutCompletion($review);
     }
 
