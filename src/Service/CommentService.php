@@ -46,7 +46,9 @@ class CommentService
             }
 
             $noteProcessor->process($comment);
-            break;
+            if ($noteProcessor->preventFurtherProcessing($comment)) {
+                break;
+            }
         }
 
         $this->entityManager->flush();

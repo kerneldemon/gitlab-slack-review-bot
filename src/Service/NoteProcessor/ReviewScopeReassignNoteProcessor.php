@@ -12,30 +12,36 @@ use App\Service\GitlabService;
 use App\Service\ReviewService;
 use App\Service\ScopeService;
 
-class ReviewRequestNoteProcessor extends AbstractNoteProcessor implements NoteProcessorInterface
+class ReviewScopeReassignNoteProcessor implements NoteProcessorInterface
 {
     private $reviewService;
 
     private $chatService;
-
-    private $gitlabService;
 
     private $scopeService;
 
     public function __construct(
         ReviewService $reviewService,
         ChatService $chatService,
-        GitlabService $gitlabService,
         ScopeService $scopeService
     ) {
         $this->reviewService = $reviewService;
         $this->chatService = $chatService;
-        $this->gitlabService = $gitlabService;
         $this->scopeService = $scopeService;
     }
 
     public function supports(Comment $comment): bool
     {
+        $review = $this->reviewService->findByComment($comment);
+
+        if ($review === null) {
+            return false;
+        }
+
+        if (stripos($comment->getNote(), $review->getScope()) !== false) {
+            return false;
+        }
+
         $scopes = $this->scopeService->getAllLongestNameFirst();
         foreach ($scopes as $scope) {
             if (stripos($comment->getNote(), $scope->getName()) !== false) {
@@ -61,27 +67,21 @@ class ReviewRequestNoteProcessor extends AbstractNoteProcessor implements NotePr
     protected function processReview(Comment $comment, string $scopeName): void
     {
         $review = $this->reviewService->findByComment($comment);
-        if ($review === null) {
-            $review = $this->reviewService->createByComment($comment);
-        }
-
-        if ($this->isAdditionalReviewNeeded($review)) {
-            $review->setStatus(ReviewStatus::IN_REVIEW);
-
-            $this->chatService->notifyAboutAdditionalReview($review);
-            $this->gitlabService->notifyAboutAdditionalReview($review);
-
+        if ($review->getScope() === $scopeName) {
             return;
         }
 
-        $review->setScope($scopeName);
-        $review->setStatus(ReviewStatus::IN_REVIEW);
+        $this->chatService->notifyAboutReassign($review);
 
-        $this->reviewService->notifyAboutReadyReviewsOnComment($review);
+        foreach ($review->getReviewers() as $reviewer) {
+            $review->removeReviewer($reviewer);
+        }
+
+        $review->setScope($scopeName);
     }
 
-    protected function isAdditionalReviewNeeded(?Review $review): bool
+    public function preventFurtherProcessing(Comment $comment): bool
     {
-        return $review->getReviewers()->count() > 0;
+        return false;
     }
 }

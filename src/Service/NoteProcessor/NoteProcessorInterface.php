@@ -10,5 +10,7 @@ interface NoteProcessorInterface
 {
     public function supports(Comment $comment): bool;
 
+    public function preventFurtherProcessing(Comment $comment): bool;
+
     public function process(Comment $comment): void;
 }
